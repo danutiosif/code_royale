@@ -14,9 +14,9 @@ int main()
     int numSites;
     cin >> numSites; cin.ignore();
     
-    vector<int> sitesID(numSites);
-    vector<int> sitesXCoordinate(numSites);
-    vector<int> sitesYCoordinate(numSites);
+    vector<int> sitesID;
+    vector<int> sitesXCoordinate;
+    vector<int> sitesYCoordinate;
     
     bool builtFirstSite = false;
 
@@ -39,7 +39,7 @@ int main()
         sitesYCoordinate.push_back(y);
     }
 
-    int closestSite = closest(sitesXCoordinate, 900);
+    int closestSite;
 
     // game loop
     while (1) 
@@ -61,7 +61,6 @@ int main()
 
             if (param1 == 0 && owner == 0)
             {
-                builtFirstSite = true;
                 availableTraining = true;
                 availableTrainingSite = siteId;
                 //availableUnitTrain = param2; TODO: Not yet used
@@ -84,18 +83,22 @@ int main()
         /************************* MOVE/BUILD COMMANDS *********************/
             /***********************************************************/
 
-      //  cout << "WAIT" << endl;
         if (!builtFirstSite)
         {
-                                
+            closestSite = closest(sitesXCoordinate, 1000);                                
             cout << "BUILD " << sitesID[closestSite] << " BARRACKS-KNIGHT" << endl;
         }
 
 
         if (builtFirstSite)
         {
-            //closestSite = closest(sitesXCoordinate, closestSite);       
-            cout << "BUILD " << sitesID[closestSite++] << " BARRACKS-KNIGHT" << endl;
+            if (touchedSite == sitesID[closestSite])
+            {
+                sitesXCoordinate.erase(sitesXCoordinate.begin() + closestSite);
+                closestSite = closest(sitesXCoordinate, sitesXCoordinate[closestSite]);    
+            }
+            
+            cout << "BUILD " << sitesID[closestSite] << " BARRACKS-KNIGHT" << endl;
         }
 
 
@@ -107,6 +110,7 @@ int main()
 
         if (availableTraining)
         {
+            builtFirstSite = true;
             cout << "TRAIN " << availableTrainingSite << endl;
             jobDone = true;
         }
@@ -118,10 +122,20 @@ int main()
     }
 }
  
-
 int closest(std::vector<int> const& vec, int value) {
     auto const it = std::lower_bound(vec.begin(), vec.end(), value);
-    if (it == vec.end()) { return -1; }
+    int threshold = 100, found = 0;
 
-    return *it;
+    for (int i = 0; i < vec.size();i++)
+    {
+        if ( abs(vec[i] - value) < threshold)
+        {
+            found = i;
+            threshold = abs(vec[i] - value);
+        }
+    }
+
+    return found;
 }
+
+
