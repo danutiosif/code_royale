@@ -6,10 +6,25 @@
 using namespace std;
 
 
+int closest(std::vector<int> const& vec, int value);
+  
+
 int main()
 {
     int numSites;
     cin >> numSites; cin.ignore();
+    
+    vector<int> sitesID(numSites);
+    vector<int> sitesXCoordinate(numSites);
+    vector<int> sitesYCoordinate(numSites);
+    
+    bool builtFirstSite = false;
+
+    bool availableTraining = false;
+    int availableTrainingSite = -1;
+    int availableUnitTrain = -1;
+    bool jobDone = false;
+
     //Initial loop. The only way to get the coordinates for the sites
     for (int i = 0; i < numSites; i++) 
     {
@@ -18,7 +33,13 @@ int main()
         int y;
         int radius;
         cin >> siteId >> x >> y >> radius; cin.ignore();
+
+        sitesID.push_back(siteId);
+        sitesXCoordinate.push_back(x);
+        sitesYCoordinate.push_back(y);
     }
+
+    int closestSite = closest(sitesXCoordinate, 900);
 
     // game loop
     while (1) 
@@ -37,6 +58,14 @@ int main()
             int param1; // -1 = No Barracks, 0 = Unit training available, X (1, 2, 3) = number of turns until the unit training is available
             int param2; // -1 = No structure, 0 = KNIGHT, 1 = ARCHER
             cin >> siteId >> ignore1 >> ignore2 >> structureType >> owner >> param1 >> param2; cin.ignore();
+
+            if (param1 == 0 && owner == 0)
+            {
+                builtFirstSite = true;
+                availableTraining = true;
+                availableTrainingSite = siteId;
+                //availableUnitTrain = param2; TODO: Not yet used
+            }
         }
         int numUnits;
         cin >> numUnits; cin.ignore();
@@ -50,8 +79,49 @@ int main()
             cin >> x >> y >> owner >> unitType >> health; cin.ignore();
         }
 
-        cout << "WAIT" << endl;
-        cout << "TRAIN" << endl;
+
+            /***********************************************************/
+        /************************* MOVE/BUILD COMMANDS *********************/
+            /***********************************************************/
+
+      //  cout << "WAIT" << endl;
+        if (!builtFirstSite)
+        {
+                                
+            cout << "BUILD " << sitesID[closestSite] << " BARRACKS-KNIGHT" << endl;
+        }
+
+
+        if (builtFirstSite)
+        {
+            //closestSite = closest(sitesXCoordinate, closestSite);       
+            cout << "BUILD " << sitesID[closestSite++] << " BARRACKS-KNIGHT" << endl;
+        }
+
+
+
+            /***********************************************************/
+        /************************* TRAIN COMMANDS **************************/
+            /***********************************************************/
+        
+
+        if (availableTraining)
+        {
+            cout << "TRAIN " << availableTrainingSite << endl;
+            jobDone = true;
+        }
+        else
+        {
+            jobDone = false;
+            cout << "TRAIN" << endl;    
+        }
     }
 }
  
+
+int closest(std::vector<int> const& vec, int value) {
+    auto const it = std::lower_bound(vec.begin(), vec.end(), value);
+    if (it == vec.end()) { return -1; }
+
+    return *it;
+}
