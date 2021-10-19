@@ -2,28 +2,74 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <cmath>
+#include <map>
 
 using namespace std;
 
 
-int closest(std::vector<int> const& vec, int value);
-  
+
+class Site
+{
+
+public: 
+    Site() = default;
+    Site (int x, int y)
+    :x(x),
+    y(y)
+    {}
+    ~Site() = default;
+
+    const int getOwner() {return owner;}
+    void setOwner(const int& owner) {this->owner = owner;}
+
+    const int getX() {return x;}
+    void setX(const int& x) {this->x = x;}
+
+    const int getY() {return y;}
+    void setY(const int& y) {this->y = y;}
+
+private:
+    int x;
+    int y;
+    int owner; // -1 = No structure, 0 = Friendly, 1 = Enemy
+};
+
+//TODO: make this lambda
+float computeDistance(int x1, int y1, int x2, int y2)
+{
+    return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+}
+
+int closest(std::map<int, Site> allSites, std::pair<int, int> myQueen) {
+    float reference = 10000, found = -1;
+    float computedDistance = -1;
+
+    for (auto it : allSites)//= allSites.begin(); it != allSites.end(); it++)
+    {
+        computedDistance = computeDistance(it.second.getX(), it.second.getY(), myQueen.first, myQueen.second);
+        if ( computedDistance < reference)
+        {
+            found = it.first;
+            reference = computedDistance;
+        }
+    }
+
+    return found;
+}
+
 
 int main()
 {
     int numSites;
     cin >> numSites; cin.ignore();
-    
-    vector<int> sitesID;
-    vector<int> sitesXCoordinate;
-    vector<int> sitesYCoordinate;
+
+    std::map<int, Site> allSites;
     
     bool builtFirstSite = false;
-
     bool availableTraining = false;
     int availableTrainingSite = -1;
     int availableUnitTrain = -1;
-    bool jobDone = false;
 
     //Initial loop. The only way to get the coordinates for the sites
     for (int i = 0; i < numSites; i++) 
@@ -33,10 +79,7 @@ int main()
         int y;
         int radius;
         cin >> siteId >> x >> y >> radius; cin.ignore();
-
-        sitesID.push_back(siteId);
-        sitesXCoordinate.push_back(x);
-        sitesYCoordinate.push_back(y);
+        allSites.insert(std::pair<int, Site>(siteId, Site(x, y)));
     }
 
     int closestSite;
@@ -44,8 +87,10 @@ int main()
     // game loop
     while (1) 
     {
+        std::pair<int, int> myQueen;
         int gold;
         int touchedSite; // -1 if none, siteId of the touched site
+        bool builtTouchedSite = false;
         cin >> gold >> touchedSite; cin.ignore();
         //loop for each site
         for (int i = 0; i < numSites; i++) 
@@ -58,6 +103,12 @@ int main()
             int param1; // -1 = No Barracks, 0 = Unit training available, X (1, 2, 3) = number of turns until the unit training is available
             int param2; // -1 = No structure, 0 = KNIGHT, 1 = ARCHER
             cin >> siteId >> ignore1 >> ignore2 >> structureType >> owner >> param1 >> param2; cin.ignore();
+
+            allSites[siteId].setOwner(owner);
+            if (touchedSite == siteId && 0 == owner)
+            {
+                builtTouchedSite = true;
+            }
 
             if (param1 == 0 && owner == 0)
             {
@@ -76,29 +127,41 @@ int main()
             int unitType; // -1 = QUEEN, 0 = KNIGHT, 1 = ARCHER
             int health;
             cin >> x >> y >> owner >> unitType >> health; cin.ignore();
+            //looking for the friendly queen
+            if (-1 == unitType && 0 == owner)
+            {
+                myQueen = std::make_pair(x, y);
+            }
+            
         }
+
 
 
             /***********************************************************/
         /************************* MOVE/BUILD COMMANDS *********************/
             /***********************************************************/
 
+
+        int safeSite = closestSite;                    
         if (!builtFirstSite)
         {
-            closestSite = closest(sitesXCoordinate, 1000);                                
-            cout << "BUILD " << sitesID[closestSite] << " BARRACKS-KNIGHT" << endl;
+            closestSite = closest(allSites, myQueen);   
+            cout << "BUILD " << allSites.find(closestSite)->first << " BARRACKS-KNIGHT" << endl;
         }
-
 
         if (builtFirstSite)
         {
-            if (touchedSite == sitesID[closestSite])
+            if (touchedSite == allSites.find(closestSite)->first && builtTouchedSite)
             {
-                sitesXCoordinate.erase(sitesXCoordinate.begin() + closestSite);
-                closestSite = closest(sitesXCoordinate, sitesXCoordinate[closestSite]);    
+                allSites.erase(closestSite);
+                closestSite = closest(allSites, myQueen);    
+                if (1 == allSites[closestSite].getOwner())
+                {
+                    closestSite = safeSite;
+                }
+                
             }
-            
-            cout << "BUILD " << sitesID[closestSite] << " BARRACKS-KNIGHT" << endl;
+            cout << "BUILD " << allSites.find(closestSite)->first << " BARRACKS-KNIGHT" << endl;           
         }
 
 
@@ -108,34 +171,15 @@ int main()
             /***********************************************************/
         
 
+
         if (availableTraining)
         {
             builtFirstSite = true;
             cout << "TRAIN " << availableTrainingSite << endl;
-            jobDone = true;
         }
         else
         {
-            jobDone = false;
             cout << "TRAIN" << endl;    
         }
     }
 }
- 
-int closest(std::vector<int> const& vec, int value) {
-    auto const it = std::lower_bound(vec.begin(), vec.end(), value);
-    int threshold = 100, found = 0;
-
-    for (int i = 0; i < vec.size();i++)
-    {
-        if ( abs(vec[i] - value) < threshold)
-        {
-            found = i;
-            threshold = abs(vec[i] - value);
-        }
-    }
-
-    return found;
-}
-
-
